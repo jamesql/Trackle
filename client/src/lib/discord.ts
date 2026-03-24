@@ -106,3 +106,44 @@ export async function shareResults(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Get the guild ID from the Discord SDK (available after init). */
+export function getGuildId(): string | null {
+  return discordSdk?.guildId ?? null;
+}
+
+/**
+ * Report a daily game result to the server so it can be shown
+ * via /trackle daily and the daily review.
+ */
+export async function reportDailyResult(
+  date: string,
+  score: string,
+  guessGrid: string,
+  won: boolean,
+  attempts: number,
+): Promise<void> {
+  if (!isDiscordActivity || !discordUser) return;
+
+  const guildId = getGuildId();
+  if (!guildId) return;
+
+  try {
+    await fetch('/api/discord/daily-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        discordId: discordUser.id,
+        guildId,
+        username: discordUser.global_name || discordUser.username,
+        date,
+        score,
+        guessGrid,
+        won,
+        attempts,
+      }),
+    });
+  } catch (err) {
+    console.warn('Failed to report daily result:', err);
+  }
+}

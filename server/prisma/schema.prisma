@@ -22,3 +22,24 @@ model SongPool {
   genre    String?
   active   Boolean @default(true)
 }
+
+model DiscordDailyResult {
+  id        Int      @id @default(autoincrement())
+  date      String   // YYYY-MM-DD
+  discordId String   // Discord user ID
+  guildId   String   // Discord guild (server) ID
+  username  String   // Display name for the review
+  score     String   // "3/6" or "X/6"
+  guessGrid String   // Emoji grid string
+  won       Boolean
+  attempts  Int      // Number of attempts used
+  createdAt DateTime @default(now())
+
+  @@unique([date, discordId, guildId])
+}
+
+model DiscordReviewChannel {
+  id        Int    @id @default(autoincrement())
+  guildId   String @unique
+  channelId String
+}

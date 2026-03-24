@@ -13,7 +13,7 @@ import {
 } from '../lib/api';
 import type { TrackSummary, GamePayload } from '../lib/api';
 import { useStatsStore } from './statsStore';
-import { updateActivity } from '../lib/discord';
+import { updateActivity, reportDailyResult } from '../lib/discord';
 import { saveDailyResult, loadDailyResult } from './dailyResultStore';
 
 export type GuessEntry =
@@ -67,6 +67,19 @@ function persistDailyIfNeeded(state: GameState) {
       answer: state.answer,
       gameId: state.gameId,
     });
+
+    // Report to server for Discord daily review & /trackle daily command
+    const won = state.gameStatus === 'won';
+    const score = won ? `${state.guesses.length}/6` : 'X/6';
+    const grid = Array.from({ length: MAX_ATTEMPTS }, (_, i) => {
+      const entry = state.guesses[i];
+      if (!entry) return '\u2B1B';           // ⬛ unused
+      if (entry.type === 'skipped') return '\u2B1C'; // ⬜ skipped
+      if (entry.type === 'wrong') return '\uD83D\uDFE5';   // 🟥 wrong
+      return '\uD83D\uDFE9';                 // 🟩 correct
+    }).join('');
+
+    reportDailyResult(state.gameId, score, grid, won, state.guesses.length);
   }
 }
 

@@ -8,12 +8,14 @@ import searchRouter from './search.js';
 import audioRouter from './audio.js';
 import imageProxyRouter from './imageProxy.js';
 import discordRouter from './discord.js';
+import discordResultsRouter from './discordResults.js';
 
 const router = Router();
 
 router.use(audioRouter);
 router.use(imageProxyRouter);
 router.use(discordRouter);
+router.use(discordResultsRouter);
 router.use(dailyRouter);
 router.use(artistRouter);
 router.use(playlistRouter);
