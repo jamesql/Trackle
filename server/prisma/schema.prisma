@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DailySong {
+  id        Int      @id @default(autoincrement())
+  date      String   @unique
+  trackId   String
+  createdAt DateTime @default(now())
+}
+
+model SongPool {
+  id       Int     @id @default(autoincrement())
+  trackId  String  @unique
+  title    String
+  artist   String
+  genre    String?
+  active   Boolean @default(true)
+}
