@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGameStore, searchTracksForGuess } from '../stores/gameStore';
+import { proxyImageUrl } from '../lib/imageUrl';
 import type { TrackSummary } from '../lib/api';
 
 export default function GuessInput() {
@@ -125,7 +126,7 @@ export default function GuessInput() {
             >
               {track.albumArt && (
                 <img
-                  src={track.albumArt}
+                  src={proxyImageUrl(track.albumArt)}
                   alt=""
                   className="w-10 h-10 rounded-lg object-cover flex-shrink-0 shadow-md"
                 />

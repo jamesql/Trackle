@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { generateShareText, copyShareText } from '../utils/share';
+import { proxyImageUrl } from '../lib/imageUrl';
 
 interface ResultsModalProps {
   isRestored?: boolean;
@@ -78,7 +79,7 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
                 won ? 'bg-green-500' : 'bg-purple-500'
               }`} />
               <img
-                src={answer.albumArt}
+                src={proxyImageUrl(answer.albumArt)}
                 alt={answer.title}
                 className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-2xl shadow-2xl shadow-black/50 object-cover"
               />

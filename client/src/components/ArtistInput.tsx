@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { searchArtists } from '../lib/api';
+import { proxyImageUrl } from '../lib/imageUrl';
 import type { ArtistSummary } from '../lib/api';
 
 function extractArtistId(input: string): string | null {
@@ -159,7 +160,7 @@ export default function ArtistInput() {
             >
               {artist.imageUrl ? (
                 <img
-                  src={artist.imageUrl}
+                  src={proxyImageUrl(artist.imageUrl)}
                   alt=""
                   className="w-10 h-10 rounded-full object-cover flex-shrink-0 shadow-md"
                 />
