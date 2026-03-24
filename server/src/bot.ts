@@ -17,7 +17,7 @@ import {
   type Interaction,
   type TextChannel,
 } from 'discord.js';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type DiscordDailyResult } from '@prisma/client';
 import { config } from './config.js';
 import { getTrack } from './services/spotify.js';
 
@@ -238,7 +238,7 @@ async function postDailyReview() {
   }
 
   // Group results by guild
-  const byGuild = new Map<string, typeof allResults>();
+  const byGuild = new Map<string, DiscordDailyResult[]>();
   for (const r of allResults) {
     const list = byGuild.get(r.guildId) ?? [];
     list.push(r);
