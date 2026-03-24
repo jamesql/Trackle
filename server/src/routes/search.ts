@@ -35,7 +35,8 @@ function filterLyricMatches(tracks: TrackSummary[], query: string): TrackSummary
 
   return tracks.filter(track => {
     const haystack = normalizeString(track.title) + ' ' + normalizeString(track.artist);
-    return queryWords.some(word => haystack.includes(word));
+    const matchCount = queryWords.filter(word => haystack.includes(word)).length;
+    return matchCount > queryWords.length / 2;
   });
 }
 
@@ -50,7 +51,7 @@ router.get('/search', async (req, res) => {
     // Fetch extra results to have room after filtering and deduplication
     const results = await searchTracks(query.trim(), 20);
     const filtered = filterLyricMatches(results, query.trim());
-    const deduped = dedupeByTitleArtist(filtered.length > 0 ? filtered : results, 5);
+    const deduped = dedupeByTitleArtist(filtered, 5);
     res.json(deduped);
   } catch (err) {
     console.error('Error searching tracks:', err);
