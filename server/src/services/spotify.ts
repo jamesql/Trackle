@@ -14,6 +14,7 @@ interface SpotifyToken {
 interface SpotifyTrack {
   id: string;
   name: string;
+  popularity: number;
   artists: { name: string }[];
   album: { images: { url: string }[] };
 }
@@ -72,6 +73,7 @@ function toTrackSummary(track: SpotifyTrack): TrackSummary {
     artist: track.artists.map((a) => a.name).join(', '),
     albumArt: track.album.images[0]?.url ?? '',
     previewUrl: `spotify:track:${track.id}`,
+    popularity: track.popularity,
   };
 }
 

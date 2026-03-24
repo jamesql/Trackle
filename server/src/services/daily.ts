@@ -30,6 +30,9 @@ export interface DailyResult {
   track: TrackSummary;
 }
 
+/** Minimum Spotify popularity score (0–100) for daily song candidates. */
+const MIN_POPULARITY = 60;
+
 export async function getDailySong(date: string): Promise<DailyResult> {
   // Return cached selection if it still works
   const existing = await prisma.dailySong.findUnique({ where: { date } });
@@ -39,6 +42,10 @@ export async function getDailySong(date: string): Promise<DailyResult> {
     // Track no longer available — delete stale entry and re-pick
     await prisma.dailySong.delete({ where: { date } });
   }
+
+  // Fetch all previously used track IDs to avoid duplicates
+  const pastSongs = await prisma.dailySong.findMany({ select: { trackId: true } });
+  const usedTrackIds = new Set(pastSongs.map((s) => s.trackId));
 
   const rng = seededRandom(config.DAILY_SONG_SEED_SECRET + date);
 
@@ -59,15 +66,21 @@ export async function getDailySong(date: string): Promise<DailyResult> {
     }
     if (results.length === 0) continue;
 
-    // Shuffle results deterministically, try each for a working preview
-    const indices = Array.from({ length: results.length }, (_, i) => i);
+    // Filter: must be popular enough and not previously used
+    const eligible = results.filter(
+      (t) => (t.popularity ?? 0) >= MIN_POPULARITY && !usedTrackIds.has(t.trackId)
+    );
+    if (eligible.length === 0) continue;
+
+    // Shuffle eligible results deterministically, try each for a working preview
+    const indices = Array.from({ length: eligible.length }, (_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
 
     for (const idx of indices) {
-      const candidate = results[idx];
+      const candidate = eligible[idx];
       const preview = await getPreviewUrl(candidate.trackId);
       if (!preview) continue;
 

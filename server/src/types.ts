@@ -6,6 +6,7 @@ export interface TrackSummary {
   artist: string;
   albumArt: string;
   previewUrl: string;
+  popularity?: number;
 }
 
 export interface GamePayload {
