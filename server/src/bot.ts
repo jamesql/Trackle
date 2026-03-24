@@ -35,9 +35,18 @@ async function registerCommands() {
   const rest = new REST({ version: '10' }).setToken(config.DISCORD_BOT_TOKEN);
 
   try {
+    // Fetch existing commands to preserve the Entry Point command
+    const existing = (await rest.get(
+      Routes.applicationCommands(config.DISCORD_CLIENT_ID)
+    )) as Array<{ id: string; name: string; type?: number }>;
+
+    // Keep any Entry Point commands (type 4) and system commands
+    const preserved = existing.filter((cmd) => cmd.type === 4);
+    const newCommands = [...preserved, ...COMMANDS.map((c) => c.toJSON())];
+
     await rest.put(
       Routes.applicationCommands(config.DISCORD_CLIENT_ID),
-      { body: COMMANDS.map((c) => c.toJSON()) }
+      { body: newCommands }
     );
     console.log('Discord slash commands registered');
   } catch (err) {
