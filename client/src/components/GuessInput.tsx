@@ -100,7 +100,7 @@ export default function GuessInput() {
           onKeyDown={handleKeyDown}
           disabled={isDisabled}
           placeholder={isDisabled ? 'Game over' : 'Search for a song...'}
-          className="w-full pl-11 pr-10 py-3.5 glass rounded-xl text-white placeholder-white/25 focus:outline-none focus:border-green-500/40 focus:shadow-[0_0_20px_rgba(29,185,84,0.08)] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
+          className="w-full pl-11 pr-10 py-2.5 glass rounded-xl text-white placeholder-white/25 focus:outline-none focus:border-green-500/40 focus:shadow-[0_0_20px_rgba(29,185,84,0.08)] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
         />
         {isSearching && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">

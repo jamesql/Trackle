@@ -36,7 +36,7 @@ export default function App() {
   const showGameBoard = !isRestoredResult && (gameStatus === 'playing' || gameStatus === 'loading');
 
   return (
-    <div className="max-w-lg mx-auto px-4 pb-12">
+    <div className="max-w-lg mx-auto px-4 pb-6 h-dvh overflow-y-auto">
       <Header onStatsClick={() => setStatsOpen(true)} onHelpClick={() => setHelpOpen(true)} />
       <ModeSelector />
 

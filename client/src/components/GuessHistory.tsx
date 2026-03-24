@@ -3,7 +3,7 @@ import { useGameStore, type GuessEntry } from '../stores/gameStore';
 const MAX_ATTEMPTS = 6;
 
 function GuessSlot({ entry, index }: { entry: GuessEntry | null; index: number }) {
-  const baseClasses = 'flex items-center h-11 px-4 rounded-xl text-sm transition-all duration-300';
+  const baseClasses = 'flex items-center h-9 px-3 rounded-lg text-xs transition-all duration-300';
 
   if (!entry) {
     return (
@@ -50,7 +50,7 @@ export default function GuessHistory() {
   const slots = Array.from({ length: MAX_ATTEMPTS }, (_, i) => guesses[i] ?? null);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       {slots.map((entry, i) => (
         <GuessSlot key={i} entry={entry} index={i} />
       ))}

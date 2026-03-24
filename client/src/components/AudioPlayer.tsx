@@ -87,9 +87,9 @@ export default function AudioPlayer() {
   const unlockedPct = (clipDuration / maxDuration) * 100;
 
   return (
-    <div className="glass rounded-2xl p-5 space-y-4 animate-slide-up">
+    <div className="glass rounded-2xl p-4 space-y-3 animate-slide-up">
       {/* Timeline */}
-      <div className="relative pt-5 pb-1">
+      <div className="relative pt-4 pb-0.5">
         {/* Tick marks + labels above the bar */}
         {durations.map((d, i) => (
           <div
@@ -137,13 +137,13 @@ export default function AudioPlayer() {
       </div>
 
       {/* Play button */}
-      <div className="flex justify-center pt-1">
+      <div className="flex justify-center pt-0.5">
         <div className="relative">
           {isPlaying && <div className="absolute inset-0 rounded-full pulse-ring" />}
           <button
             onClick={isPlaying ? stopPlayback : play}
             disabled={!ready || gameStatus !== 'playing'}
-            className={`relative w-16 h-16 flex items-center justify-center rounded-full transition-all duration-300 ${
+            className={`relative w-14 h-14 flex items-center justify-center rounded-full transition-all duration-300 ${
               ready && gameStatus === 'playing'
                 ? 'bg-gradient-to-br from-green-400 to-emerald-500 glow-green hover:scale-105 active:scale-95'
                 : 'bg-white/10 cursor-not-allowed'

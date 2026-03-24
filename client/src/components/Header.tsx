@@ -5,7 +5,7 @@ interface HeaderProps {
 
 export default function Header({ onStatsClick, onHelpClick }: HeaderProps) {
   return (
-    <header className="flex items-center justify-between py-5">
+    <header className="flex items-center justify-between py-3">
       <button
         onClick={onHelpClick}
         className="w-10 h-10 flex items-center justify-center rounded-xl glass glass-hover transition-all duration-200 text-white/40 hover:text-white/80"

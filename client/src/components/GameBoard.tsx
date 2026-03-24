@@ -32,11 +32,11 @@ export default function GameBoard() {
   const isGameOver = gameStatus === 'won' || gameStatus === 'lost';
 
   return (
-    <div className="space-y-4 py-2">
+    <div className="space-y-2 py-1">
       <AudioPlayer />
       <GuessHistory />
       {!isGameOver && (
-        <div className="space-y-3 animate-fade-in">
+        <div className="space-y-2 animate-fade-in">
           <GuessInput />
           <ActionButtons />
         </div>

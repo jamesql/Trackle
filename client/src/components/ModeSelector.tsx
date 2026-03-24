@@ -11,7 +11,7 @@ export default function ModeSelector() {
   const setMode = useGameStore((s) => s.setMode);
 
   return (
-    <div className="flex gap-2 my-4">
+    <div className="flex gap-2 my-2">
       {modes.map((m) => (
         <button
           key={m.key}
