@@ -40,8 +40,9 @@ export default function ArtistInput() {
     setIsSearching(true);
     try {
       const artists = await searchArtists(q);
-      setResults(artists);
-      setIsOpen(artists.length > 0);
+      const arr = Array.isArray(artists) ? artists : [];
+      setResults(arr);
+      setIsOpen(arr.length > 0);
       setSelectedIndex(-1);
     } catch {
       setResults([]);

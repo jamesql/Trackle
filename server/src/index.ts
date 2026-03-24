@@ -1,9 +1,12 @@
 /**
  * Express server entry point.
- * In production, also serves the built React frontend as static files.
+ * In production, serves both HTTPS (with Cloudflare Origin cert) and the built React frontend.
  * Supports Discord Activity iframe embedding via permissive CSP.
  */
 import 'dotenv/config';
+import fs from 'node:fs';
+import https from 'node:https';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -58,6 +61,31 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
-app.listen(config.PORT, () => {
-  console.log(`Server running on port ${config.PORT}`);
-});
+// Try HTTPS with Cloudflare Origin cert, fall back to HTTP
+const SSL_CERT = process.env.SSL_CERT_PATH || '/etc/ssl/cloudflare/origin.pem';
+const SSL_KEY = process.env.SSL_KEY_PATH || '/etc/ssl/cloudflare/origin-key.pem';
+
+if (fs.existsSync(SSL_CERT) && fs.existsSync(SSL_KEY)) {
+  const sslOptions = {
+    cert: fs.readFileSync(SSL_CERT),
+    key: fs.readFileSync(SSL_KEY),
+  };
+
+  // HTTPS on 443 (for Discord proxy + Cloudflare Full mode)
+  https.createServer(sslOptions, app).listen(443, () => {
+    console.log('HTTPS server running on port 443');
+  });
+
+  // HTTP on 80 (redirect to HTTPS)
+  http.createServer((req, res) => {
+    res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+    res.end();
+  }).listen(80, () => {
+    console.log('HTTP redirect running on port 80');
+  });
+} else {
+  // No SSL certs found — plain HTTP (dev mode)
+  app.listen(config.PORT, () => {
+    console.log(`Server running on port ${config.PORT}`);
+  });
+}

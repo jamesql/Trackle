@@ -25,8 +25,9 @@ export default function GuessInput() {
       setIsSearching(true);
       try {
         const tracks = await searchTracksForGuess(q);
-        setResults(tracks);
-        setIsOpen(tracks.length > 0);
+        const arr = Array.isArray(tracks) ? tracks : [];
+        setResults(arr);
+        setIsOpen(arr.length > 0);
         setSelectedIndex(-1);
       } catch {
         setResults([]);
