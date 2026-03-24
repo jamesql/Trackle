@@ -24,6 +24,21 @@ function dedupeByTitleArtist(tracks: TrackSummary[], limit: number): TrackSummar
   return result;
 }
 
+/**
+ * Filter out tracks that Spotify matched via lyrics rather than title/artist.
+ * If no query word (3+ chars) appears in the track title or artist name,
+ * it's almost certainly a lyric match.
+ */
+function filterLyricMatches(tracks: TrackSummary[], query: string): TrackSummary[] {
+  const queryWords = normalizeString(query).split(' ').filter(w => w.length >= 3);
+  if (queryWords.length === 0) return tracks;
+
+  return tracks.filter(track => {
+    const haystack = normalizeString(track.title) + ' ' + normalizeString(track.artist);
+    return queryWords.some(word => haystack.includes(word));
+  });
+}
+
 router.get('/search', async (req, res) => {
   try {
     const query = req.query.q as string;
@@ -32,9 +47,10 @@ router.get('/search', async (req, res) => {
       return;
     }
 
-    // Fetch extra results to have room after deduplication
+    // Fetch extra results to have room after filtering and deduplication
     const results = await searchTracks(query.trim(), 20);
-    const deduped = dedupeByTitleArtist(results, 5);
+    const filtered = filterLyricMatches(results, query.trim());
+    const deduped = dedupeByTitleArtist(filtered.length > 0 ? filtered : results, 5);
     res.json(deduped);
   } catch (err) {
     console.error('Error searching tracks:', err);
