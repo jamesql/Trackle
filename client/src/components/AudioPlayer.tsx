@@ -15,8 +15,9 @@ export default function AudioPlayer() {
   const timerRef = useRef<number | null>(null);
   const progressRef = useRef<number | null>(null);
 
-  const clipDuration = clipDurations[Math.min(currentAttempt, clipDurations.length - 1)];
-  const maxDuration = clipDurations[clipDurations.length - 1];
+  const durations = clipDurations ?? [1, 2, 4, 7, 11, 16];
+  const clipDuration = durations[Math.min(currentAttempt, durations.length - 1)];
+  const maxDuration = durations[durations.length - 1];
 
   useEffect(() => {
     if (!previewUrl) {
@@ -90,7 +91,7 @@ export default function AudioPlayer() {
       {/* Timeline */}
       <div className="relative pt-5 pb-1">
         {/* Tick marks + labels above the bar */}
-        {clipDurations.map((d, i) => (
+        {durations.map((d, i) => (
           <div
             key={i}
             className="absolute top-0 flex flex-col items-center -translate-x-1/2"
@@ -111,7 +112,7 @@ export default function AudioPlayer() {
         {/* Bar */}
         <div className="relative h-2 rounded-full bg-white/5 overflow-hidden mt-1">
           {/* Segment dividers */}
-          {clipDurations.slice(0, -1).map((d, i) => (
+          {durations.slice(0, -1).map((d, i) => (
             <div
               key={i}
               className="absolute top-0 bottom-0 w-px bg-white/10 z-10"

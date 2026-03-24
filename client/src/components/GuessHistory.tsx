@@ -46,7 +46,7 @@ function GuessSlot({ entry, index }: { entry: GuessEntry | null; index: number }
 }
 
 export default function GuessHistory() {
-  const guesses = useGameStore((s) => s.guesses);
+  const guesses = useGameStore((s) => s.guesses) ?? [];
   const slots = Array.from({ length: MAX_ATTEMPTS }, (_, i) => guesses[i] ?? null);
 
   return (
