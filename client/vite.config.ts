@@ -8,5 +8,11 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3001',
     },
+    // Allow Discord's proxy domain to connect during dev
+    allowedHosts: ['.discordsays.com', '.discord.com'],
+    // Configure HMR for Discord iframe (needs specific host/port)
+    hmr: {
+      clientPort: 443,
+    },
   },
 });
