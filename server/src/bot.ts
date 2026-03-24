@@ -86,7 +86,7 @@ function createPlayButton() {
     new ButtonBuilder()
       .setLabel('Play Trackle')
       .setStyle(ButtonStyle.Link)
-      .setURL(`https://${config.DISCORD_CLIENT_ID}.discordsays.com`)
+      .setURL(`https://discord.com/activities/${config.DISCORD_CLIENT_ID}`)
       .setEmoji('🎵'),
   );
 }
