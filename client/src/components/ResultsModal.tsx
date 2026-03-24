@@ -15,6 +15,7 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
   const gameId = useGameStore((s) => s.gameId);
   const mode = useGameStore((s) => s.mode);
   const resetGame = useGameStore((s) => s.resetGame);
+  const replayArtist = useGameStore((s) => s.replayArtist);
 
   const [copied, setCopied] = useState(false);
 
@@ -143,7 +144,23 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
               {copied ? '✓ Copied!' : 'Share Results'}
             </button>
 
-            {mode !== 'daily' && (
+            {mode === 'artist' && (
+              <>
+                <button
+                  onClick={() => replayArtist()}
+                  className="px-6 py-3 glass rounded-xl font-semibold text-sm text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-all duration-200"
+                >
+                  Same Artist
+                </button>
+                <button
+                  onClick={handlePlayAgain}
+                  className="px-6 py-3 glass rounded-xl font-semibold text-sm text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-all duration-200"
+                >
+                  New Artist
+                </button>
+              </>
+            )}
+            {mode === 'playlist' && (
               <button
                 onClick={handlePlayAgain}
                 className="px-6 py-3 glass rounded-xl font-semibold text-sm text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-all duration-200"

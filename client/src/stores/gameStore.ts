@@ -32,6 +32,7 @@ interface GameState {
   gameStatus: 'idle' | 'loading' | 'playing' | 'won' | 'lost' | 'error';
   answer: TrackSummary | null;
   error: string | null;
+  lastArtistId: string | null;
 
   startDaily: () => Promise<void>;
   startArtistGame: (artistId: string) => Promise<void>;
@@ -39,6 +40,7 @@ interface GameState {
   submitGuess: (track: TrackSummary) => Promise<void>;
   skip: () => Promise<void>;
   resetGame: () => void;
+  replayArtist: () => Promise<void>;
   setMode: (mode: 'daily' | 'artist' | 'playlist') => void;
 }
 
@@ -94,6 +96,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   gameStatus: 'idle',
   answer: null,
   error: null,
+  lastArtistId: null,
 
   startDaily: async () => {
     if (useStatsStore.getState().hasPlayedToday()) {
@@ -127,7 +130,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startArtistGame: async (artistId: string) => {
-    set({ gameStatus: 'loading', error: null, mode: 'artist' });
+    set({ gameStatus: 'loading', error: null, mode: 'artist', lastArtistId: artistId });
     try {
       const payload = await fetchArtistGame(artistId);
       set(applyPayload(payload));
@@ -240,6 +243,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       answer: null,
       error: null,
     });
+  },
+
+  replayArtist: async () => {
+    const artistId = get().lastArtistId;
+    if (!artistId) return;
+    get().resetGame();
+    await get().startArtistGame(artistId);
   },
 
   setMode: (mode) => {
