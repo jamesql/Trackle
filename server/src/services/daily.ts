@@ -16,14 +16,13 @@ const prisma = new PrismaClient();
 /** Broad search terms used to discover popular tracks from Spotify's catalog. */
 const SEARCH_TERMS = [
   'pop hits', 'rock classics', 'hip hop', 'r&b', 'dance', 'indie',
-  'country', 'latin', 'soul', 'funk', 'disco', 'punk', 'metal',
-  'jazz', 'blues', 'reggae', 'electronic', 'house', 'techno',
+  'country', 'funk', 'disco', 'punk', 'electronic', 'house', 'techno',
   'love song', 'summer', 'party', 'feel good', 'workout',
-  'throwback', 'nostalgia', '2000s', '90s hits', '80s hits', '70s',
+  'throwback', 'nostalgia', '2000s', '90s hits', '80s hits',
   'top hits', 'best of', 'greatest hits', 'number one', 'chart',
-  'acoustic', 'piano', 'guitar', 'sing along', 'karaoke',
+  'acoustic', 'guitar', 'sing along', 'karaoke',
   'road trip', 'chill', 'vibe', 'energy', 'anthem',
-  'ballad', 'duet', 'remix', 'live', 'unplugged',
+  'ballad', 'duet', 'live', 'unplugged', "folk", "rap"
 ];
 
 export interface DailyResult {
