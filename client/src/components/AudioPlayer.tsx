@@ -49,6 +49,8 @@ export default function AudioPlayer() {
       html5: true,
       preload: true,
       onload: () => setReady(true),
+      // Safari often ignores preload — mark ready on first play too
+      onplay: () => setReady(true),
       onloaderror: () => setReady(false),
     });
 
@@ -62,7 +64,13 @@ export default function AudioPlayer() {
   }, [previewUrl]);
 
   const stopPlayback = useCallback(() => {
-    howlRef.current?.stop();
+    const sound = howlRef.current;
+    if (sound) {
+      // Use pause+seek instead of stop — stop() resets the HTML5 audio
+      // element on mobile Safari, requiring a full reload
+      sound.pause();
+      sound.seek(0);
+    }
     setIsPlaying(false);
     setProgress(0);
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -71,7 +79,7 @@ export default function AudioPlayer() {
 
   const play = useCallback(() => {
     const sound = howlRef.current;
-    if (!sound || !ready) return;
+    if (!sound) return;
 
     stopPlayback();
     sound.seek(0);
@@ -79,7 +87,8 @@ export default function AudioPlayer() {
     setIsPlaying(true);
 
     timerRef.current = window.setTimeout(() => {
-      sound.stop();
+      sound.pause();
+      sound.seek(0);
       setIsPlaying(false);
       setProgress(0);
     }, clipDuration * 1000);
@@ -94,7 +103,7 @@ export default function AudioPlayer() {
       }
     };
     progressRef.current = requestAnimationFrame(animate);
-  }, [ready, clipDuration, stopPlayback]);
+  }, [clipDuration, stopPlayback]);
 
   // Current playback position as fraction of maxDuration
   const playheadPct = isPlaying ? (progress * clipDuration / maxDuration) * 100 : 0;
@@ -192,15 +201,15 @@ export default function AudioPlayer() {
           {isPlaying && <div className="absolute inset-0 rounded-full pulse-ring" />}
           <button
             onClick={isPlaying ? stopPlayback : play}
-            disabled={!ready || gameStatus !== 'playing'}
+            disabled={gameStatus !== 'playing'}
             className={`relative w-14 h-14 flex items-center justify-center rounded-full transition-all duration-300 ${
-              ready && gameStatus === 'playing'
+              gameStatus === 'playing'
                 ? 'bg-gradient-to-br from-green-400 to-emerald-500 glow-green hover:scale-105 active:scale-95'
                 : 'bg-white/10 cursor-not-allowed'
             }`}
             aria-label={isPlaying ? 'Stop' : 'Play'}
           >
-            {!ready && gameStatus === 'playing' ? (
+            {!ready && isPlaying ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : isPlaying ? (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-black">
