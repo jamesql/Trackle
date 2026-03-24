@@ -23,7 +23,7 @@ export function generateShareText(
     grid,
     '',
     `#Trackle #${gameId}`,
-    `${window.location.origin}`,
+    'https://jmatthew.cloud',
   ];
 
   return lines.join('\n');
