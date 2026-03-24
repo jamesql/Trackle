@@ -42,7 +42,7 @@ export const useStatsStore = create<StatsState>()(
 
         const newMaxStreak = Math.max(state.maxStreak, newStreak);
 
-        const newDistribution = [...state.guessDistribution] as [number, number, number, number, number, number];
+        const newDistribution = [...(state.guessDistribution ?? [0, 0, 0, 0, 0, 0])] as [number, number, number, number, number, number];
         if (won && attemptNumber >= 1 && attemptNumber <= 6) {
           newDistribution[attemptNumber - 1] += 1;
         }

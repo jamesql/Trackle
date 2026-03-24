@@ -14,7 +14,8 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
     ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
     : 0;
 
-  const maxDistribution = Math.max(...stats.guessDistribution, 1);
+  const distribution = stats.guessDistribution ?? [0, 0, 0, 0, 0, 0];
+  const maxDistribution = Math.max(...distribution, 1);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={onClose}>
@@ -56,7 +57,7 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
         <div>
           <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Guess Distribution</h3>
           <div className="space-y-1.5">
-            {stats.guessDistribution.map((count, i) => (
+            {(stats.guessDistribution ?? [0, 0, 0, 0, 0, 0]).map((count, i) => (
               <div key={i} className="flex items-center gap-2.5">
                 <span className="text-xs font-bold text-white/30 w-3 text-right">{i + 1}</span>
                 <div className="flex-1 h-6 relative">
