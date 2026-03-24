@@ -94,7 +94,7 @@ client/                     server/
 
 **Fuzzy matching:** Different Spotify versions of the same song (remasters, deluxe editions) are accepted as correct. Titles are normalized by stripping parentheticals, brackets, and suffixes before comparison.
 
-**Daily determinism:** A seeded PRNG (mulberry32) with `DAILY_SONG_SEED_SECRET + date` ensures all players get the same song. The selection is cached in SQLite.
+**Daily determinism:** A seeded PRNG (mulberry32) with `DAILY_SONG_SEED_SECRET + date` ensures all players get the same song. Only tracks with a Spotify popularity score of 60+ are eligible, and previously used tracks are excluded to prevent repeats. The daily song resets at midnight UTC (7 PM EST / 8 PM EDT). The selection is cached in SQLite.
 
 ## Scripts
 
