@@ -14,4 +14,7 @@ export const config = {
   DAILY_SONG_SEED_SECRET: requireEnv('DAILY_SONG_SEED_SECRET'),
   PORT: parseInt(process.env.PORT || '3001', 10),
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || '',
+  DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || '',
+  DISCORD_BOT_TOKEN: process.env.DISCORD_BOT_TOKEN || '',
 };

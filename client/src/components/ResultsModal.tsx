@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { generateShareText, copyShareText } from '../utils/share';
 import { proxyImageUrl } from '../lib/imageUrl';
+import { isInDiscord, shareResults } from '../lib/discord';
 
 interface ResultsModalProps {
   isRestored?: boolean;
@@ -24,6 +25,18 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
 
   const handleShare = async () => {
     const text = generateShareText(gameId, guesses, won);
+
+    // Use Discord's native share when inside an Activity
+    if (isInDiscord()) {
+      const shared = await shareResults(text);
+      if (shared) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      }
+    }
+
+    // Fallback: copy to clipboard
     const success = await copyShareText(text);
     if (success) {
       setCopied(true);

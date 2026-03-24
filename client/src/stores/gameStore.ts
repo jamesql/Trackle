@@ -13,6 +13,7 @@ import {
 } from '../lib/api';
 import type { TrackSummary, GamePayload } from '../lib/api';
 import { useStatsStore } from './statsStore';
+import { updateActivity } from '../lib/discord';
 import { saveDailyResult, loadDailyResult } from './dailyResultStore';
 
 export type GuessEntry =
@@ -106,6 +107,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     try {
       const payload = await fetchDaily();
       set(applyPayload(payload));
+      updateActivity('Guess 1/6', 'Daily Challenge');
     } catch {
       set({ gameStatus: 'error', error: 'Failed to load daily challenge' });
     }
@@ -116,6 +118,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     try {
       const payload = await fetchArtistGame(artistId);
       set(applyPayload(payload));
+      updateActivity('Guess 1/6', 'Artist Mode');
     } catch {
       set({ gameStatus: 'error', error: 'Failed to load artist game. Check the artist ID.' });
     }
@@ -126,6 +129,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     try {
       const payload = await fetchPlaylistGame(playlistId);
       set(applyPayload(payload));
+      updateActivity('Guess 1/6', 'Playlist Mode');
     } catch {
       set({ gameStatus: 'error', error: 'Failed to load playlist game. Check the playlist ID.' });
     }
@@ -150,6 +154,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         });
         useStatsStore.getState().recordResult(get().mode, true, attemptNumber);
         persistDailyIfNeeded(get());
+        updateActivity(`Got it in ${attemptNumber}/6! 🎉`, 'Trackle');
       } else {
         const newGuesses = [...guesses, { type: 'wrong' as const, track }];
         const newAttempt = currentAttempt + 1;
@@ -164,11 +169,13 @@ export const useGameStore = create<GameState>((set, get) => ({
           });
           useStatsStore.getState().recordResult(get().mode, false, newAttempt);
           persistDailyIfNeeded(get());
+          updateActivity('X/6 💔', 'Trackle');
         } else {
           set({
             guesses: newGuesses,
             currentAttempt: newAttempt,
           });
+          updateActivity(`Guess ${newAttempt + 1}/6`, get().mode === 'daily' ? 'Daily Challenge' : 'Trackle');
         }
       }
     } catch {
@@ -199,11 +206,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       useStatsStore.getState().recordResult(get().mode, false, newAttempt);
       persistDailyIfNeeded(get());
+      updateActivity('X/6 💔', 'Trackle');
     } else {
       set({
         guesses: newGuesses,
         currentAttempt: newAttempt,
       });
+      updateActivity(`Guess ${newAttempt + 1}/6`, get().mode === 'daily' ? 'Daily Challenge' : 'Trackle');
     }
   },
 

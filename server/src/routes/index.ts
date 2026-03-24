@@ -7,11 +7,13 @@ import validateRouter from './validate.js';
 import searchRouter from './search.js';
 import audioRouter from './audio.js';
 import imageProxyRouter from './imageProxy.js';
+import discordRouter from './discord.js';
 
 const router = Router();
 
 router.use(audioRouter);
 router.use(imageProxyRouter);
+router.use(discordRouter);
 router.use(dailyRouter);
 router.use(artistRouter);
 router.use(playlistRouter);

@@ -89,3 +89,8 @@ if (fs.existsSync(SSL_CERT) && fs.existsSync(SSL_KEY)) {
     console.log(`Server running on port ${config.PORT}`);
   });
 }
+
+// Start Discord bot (runs alongside the server)
+import('./bot.js').then((bot) => bot.startBot()).catch((err) => {
+  console.error('Discord bot failed to start:', err);
+});
