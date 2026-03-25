@@ -6,7 +6,7 @@ interface DailyResult {
   date: string;
   guesses: GuessEntry[];
   gameStatus: 'won' | 'lost';
-  answer: TrackSummary;
+  answer: TrackSummary | null;
   gameId: string;
 }
 

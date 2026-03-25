@@ -61,7 +61,7 @@ function applyPayload(payload: GamePayload): Partial<GameState> {
 }
 
 function persistDailyIfNeeded(state: GameState) {
-  if (state.mode === 'daily' && state.gameId && state.answer && (state.gameStatus === 'won' || state.gameStatus === 'lost')) {
+  if (state.mode === 'daily' && state.gameId && (state.gameStatus === 'won' || state.gameStatus === 'lost')) {
     saveDailyResult({
       date: state.gameId,
       guesses: state.guesses,
@@ -176,7 +176,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         const newAttempt = currentAttempt + 1;
 
         if (newAttempt >= MAX_ATTEMPTS) {
-          const answer = await revealAnswer(gameId);
+          let answer: TrackSummary | null = null;
+          try {
+            answer = await revealAnswer(gameId);
+          } catch {
+            // Reveal failed — still show the loss screen
+          }
           set({
             guesses: newGuesses,
             currentAttempt: newAttempt,
@@ -205,21 +210,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newAttempt = currentAttempt + 1;
 
     if (newAttempt >= MAX_ATTEMPTS) {
+      let answer: TrackSummary | null = null;
       try {
-        const answer = gameId ? await revealAnswer(gameId) : null;
-        set({
-          guesses: newGuesses,
-          currentAttempt: newAttempt,
-          gameStatus: 'lost',
-          answer,
-        });
+        answer = gameId ? await revealAnswer(gameId) : null;
       } catch {
-        set({
-          guesses: newGuesses,
-          currentAttempt: newAttempt,
-          gameStatus: 'lost',
-        });
+        // Reveal failed — still show the loss screen
       }
+      set({
+        guesses: newGuesses,
+        currentAttempt: newAttempt,
+        gameStatus: 'lost',
+        answer,
+      });
       useStatsStore.getState().recordResult(get().mode, false, newAttempt);
       persistDailyIfNeeded(get());
       updateActivity('X/6 💔', 'Trackle');

@@ -20,7 +20,7 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
   const [copied, setCopied] = useState(false);
 
   if (gameStatus !== 'won' && gameStatus !== 'lost') return null;
-  if (!answer || !gameId) return null;
+  if (!gameId) return null;
 
   const won = gameStatus === 'won';
 
@@ -87,7 +87,7 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
           </div>
 
           {/* Album art with glow */}
-          {answer.albumArt && (
+          {answer?.albumArt && (
             <div className="relative">
               <div className={`absolute inset-0 rounded-2xl blur-2xl opacity-40 ${
                 won ? 'bg-green-500' : 'bg-purple-500'
@@ -101,10 +101,16 @@ export default function ResultsModal({ isRestored = false }: ResultsModalProps) 
           )}
 
           {/* Song info */}
-          <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-white leading-tight">{answer.title}</div>
-            <div className="text-sm text-white/40 mt-1 font-medium">{answer.artist}</div>
-          </div>
+          {answer ? (
+            <div className="text-center">
+              <div className="text-xl sm:text-2xl font-bold text-white leading-tight">{answer.title}</div>
+              <div className="text-sm text-white/40 mt-1 font-medium">{answer.artist}</div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="text-sm text-white/30 font-medium">Song info unavailable</div>
+            </div>
+          )}
 
           {/* Score */}
           <div className={`text-4xl font-black ${won ? 'text-green-400' : 'text-white/20'}`}>
