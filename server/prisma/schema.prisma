@@ -11,6 +11,9 @@ model DailySong {
   id        Int      @id @default(autoincrement())
   date      String   @unique
   trackId   String
+  title     String   @default("")
+  artist    String   @default("")
+  albumArt  String   @default("")
   createdAt DateTime @default(now())
 }
 

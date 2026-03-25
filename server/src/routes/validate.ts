@@ -30,6 +30,21 @@ async function resolveTrackId(gameId: string): Promise<string | null> {
   return getGameTrack(gameId);
 }
 
+/** Resolve a daily gameId to a full TrackSummary from the DB (no Spotify call). */
+async function resolveDailyTrack(gameId: string): Promise<TrackSummary | null> {
+  const dailySong = await prisma.dailySong.findUnique({ where: { date: gameId } });
+  if (dailySong && dailySong.title) {
+    return {
+      trackId: dailySong.trackId,
+      title: dailySong.title,
+      artist: dailySong.artist,
+      albumArt: dailySong.albumArt,
+      previewUrl: `spotify:track:${dailySong.trackId}`,
+    };
+  }
+  return null;
+}
+
 router.post('/validate', async (req, res) => {
   try {
     const { gameId, guessTrackId, answerHash, isFinal } = req.body as ValidateRequest;
@@ -60,14 +75,19 @@ router.post('/validate', async (req, res) => {
     const response: ValidateResponse = { correct };
 
     if (correct) {
-      const track = await getTrack(guessTrackId);
+      const track = await resolveDailyTrack(gameId) ?? await getTrack(guessTrackId);
       if (track) response.answer = track;
     } else if (isFinal) {
-      // Reveal the answer on the last attempt
-      const trackId = await resolveTrackId(gameId);
-      if (trackId) {
-        const track = await getTrack(trackId);
-        if (track) response.answer = track;
+      // Reveal the answer on the last attempt — try DB first, fall back to Spotify
+      const track = await resolveDailyTrack(gameId);
+      if (track) {
+        response.answer = track;
+      } else {
+        const trackId = await resolveTrackId(gameId);
+        if (trackId) {
+          const fetched = await getTrack(trackId);
+          if (fetched) response.answer = fetched;
+        }
       }
     }
 
@@ -87,6 +107,14 @@ router.post('/reveal', async (req, res) => {
       return;
     }
 
+    // Try DB first (no Spotify call needed for daily games)
+    const dbTrack = await resolveDailyTrack(gameId);
+    if (dbTrack) {
+      res.json({ answer: dbTrack });
+      return;
+    }
+
+    // Fall back to Spotify for artist/playlist games
     const trackId = await resolveTrackId(gameId);
     if (!trackId) {
       res.status(404).json({ error: 'Game not found' });

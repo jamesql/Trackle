@@ -227,10 +227,13 @@ async function postDailyReview() {
 
   if (allResults.length === 0) return;
 
-  // Get yesterday's song info
+  // Get yesterday's song info from DB (no Spotify call needed)
   const dailySong = await prisma.dailySong.findUnique({ where: { date: yesterday } });
   let songLine = '';
-  if (dailySong) {
+  if (dailySong && dailySong.title) {
+    songLine = `\n🎵 **${dailySong.title}** by ${dailySong.artist}`;
+  } else if (dailySong) {
+    // Legacy row without track info — fall back to Spotify
     const track = await getTrack(dailySong.trackId).catch(() => null);
     if (track) {
       songLine = `\n🎵 **${track.title}** by ${track.artist}`;

@@ -7,7 +7,7 @@
 import { PrismaClient } from '@prisma/client';
 import { config } from '../config.js';
 import { seededRandom } from '../utils/prng.js';
-import { searchTracks, getTrack } from './spotify.js';
+import { searchTracks } from './spotify.js';
 import { getPreviewUrl } from './preview.js';
 import type { TrackSummary } from '../types.js';
 
@@ -34,12 +34,21 @@ export interface DailyResult {
 const MIN_POPULARITY = 60;
 
 export async function getDailySong(date: string): Promise<DailyResult> {
-  // Return cached selection if it still works
+  // Return cached selection — no Spotify API call needed
   const existing = await prisma.dailySong.findUnique({ where: { date } });
+  if (existing && existing.title) {
+    const track: TrackSummary = {
+      trackId: existing.trackId,
+      title: existing.title,
+      artist: existing.artist,
+      albumArt: existing.albumArt,
+      previewUrl: `spotify:track:${existing.trackId}`,
+    };
+    return { trackId: existing.trackId, track };
+  }
+
+  // Legacy row without track info — delete and re-pick
   if (existing) {
-    const track = await getTrack(existing.trackId);
-    if (track) return { trackId: existing.trackId, track };
-    // Track no longer available — delete stale entry and re-pick
     await prisma.dailySong.delete({ where: { date } });
   }
 
@@ -84,11 +93,11 @@ export async function getDailySong(date: string): Promise<DailyResult> {
       const preview = await getPreviewUrl(candidate.trackId);
       if (!preview) continue;
 
-      // Use upsert to handle concurrent requests safely (race condition guard)
+      // Store track info so we never need to call Spotify again for this song
       await prisma.dailySong.upsert({
         where: { date },
-        update: { trackId: candidate.trackId },
-        create: { date, trackId: candidate.trackId },
+        update: { trackId: candidate.trackId, title: candidate.title, artist: candidate.artist, albumArt: candidate.albumArt },
+        create: { date, trackId: candidate.trackId, title: candidate.title, artist: candidate.artist, albumArt: candidate.albumArt },
       });
       return { trackId: candidate.trackId, track: candidate };
     }
