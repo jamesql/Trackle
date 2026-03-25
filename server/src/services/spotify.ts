@@ -2,6 +2,11 @@
  * Spotify Web API client.
  * Handles Client Credentials auth with token caching, track/artist search,
  * and catalog browsing for artist and playlist game modes.
+ *
+ * All outgoing requests go through spotifyFetch which provides:
+ *   - Response caching (TTL-based, avoids redundant API calls)
+ *   - Concurrency limiting (prevents 429 rate limit errors)
+ *   - Automatic retry with Retry-After on 429s
  */
 import { config } from '../config.js';
 import type { TrackSummary } from '../types.js';
@@ -18,6 +23,8 @@ interface SpotifyTrack {
   artists: { name: string }[];
   album: { images: { url: string }[] };
 }
+
+// ── Auth ─────────────────────────────────────────────────────────────
 
 let cachedToken: SpotifyToken | null = null;
 
@@ -53,24 +60,106 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.accessToken;
 }
 
-async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
-  const token = await getAccessToken();
-  const response = await fetch(`https://api.spotify.com/v1${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// ── Response cache ───────────────────────────────────────────────────
 
-  if (response.status === 429 && retries > 0) {
-    const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
-    await new Promise((r) => setTimeout(r, retryAfter * 1000));
-    return spotifyFetch(path, retries - 1);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Spotify API error: ${response.status} on ${path}`);
-  }
-
-  return response.json();
+interface CacheEntry {
+  data: unknown;
+  expiresAt: number;
 }
+
+const responseCache = new Map<string, CacheEntry>();
+
+/** TTLs by endpoint pattern (in ms). */
+const CACHE_TTLS: { pattern: RegExp; ttl: number }[] = [
+  { pattern: /^\/artists\/[^/]+\/top-tracks/, ttl: 60 * 60 * 1000 },   // 1 hour
+  { pattern: /^\/artists\/[^/]+\/albums/,     ttl: 60 * 60 * 1000 },   // 1 hour
+  { pattern: /^\/albums\/[^/]+\/tracks/,      ttl: 60 * 60 * 1000 },   // 1 hour
+  { pattern: /^\/tracks/,                     ttl: 30 * 60 * 1000 },   // 30 min
+  { pattern: /^\/playlists\//,                ttl: 15 * 60 * 1000 },   // 15 min
+  { pattern: /^\/search/,                     ttl: 5 * 60 * 1000 },    // 5 min
+];
+
+function getCacheTtl(path: string): number {
+  for (const { pattern, ttl } of CACHE_TTLS) {
+    if (pattern.test(path)) return ttl;
+  }
+  return 0; // no cache
+}
+
+// Cleanup stale entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of responseCache) {
+    if (now >= entry.expiresAt) responseCache.delete(key);
+  }
+}, 10 * 60 * 1000);
+
+// ── Concurrency limiter ──────────────────────────────────────────────
+
+const MAX_CONCURRENT = 5;
+let activeRequests = 0;
+const requestQueue: (() => void)[] = [];
+
+function acquireSlot(): Promise<void> {
+  if (activeRequests < MAX_CONCURRENT) {
+    activeRequests++;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    requestQueue.push(() => { activeRequests++; resolve(); });
+  });
+}
+
+function releaseSlot(): void {
+  activeRequests--;
+  const next = requestQueue.shift();
+  if (next) next();
+}
+
+// ── Core fetch ───────────────────────────────────────────────────────
+
+async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
+  // Check cache first
+  const ttl = getCacheTtl(path);
+  if (ttl > 0) {
+    const cached = responseCache.get(path);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.data;
+    }
+  }
+
+  await acquireSlot();
+  try {
+    const token = await getAccessToken();
+    const response = await fetch(`https://api.spotify.com/v1${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (response.status === 429 && retries > 0) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
+      releaseSlot();
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      return spotifyFetch(path, retries - 1);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status} on ${path}`);
+    }
+
+    const data = await response.json();
+
+    // Store in cache
+    if (ttl > 0) {
+      responseCache.set(path, { data, expiresAt: Date.now() + ttl });
+    }
+
+    return data;
+  } finally {
+    releaseSlot();
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
 
 function toTrackSummary(track: SpotifyTrack): TrackSummary {
   return {
@@ -82,6 +171,8 @@ function toTrackSummary(track: SpotifyTrack): TrackSummary {
     popularity: track.popularity,
   };
 }
+
+// ── Public API ───────────────────────────────────────────────────────
 
 export async function searchTracks(query: string, limit = 5): Promise<TrackSummary[]> {
   const data = (await spotifyFetch(
