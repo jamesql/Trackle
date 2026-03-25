@@ -107,7 +107,8 @@ export async function getTrack(trackId: string): Promise<TrackSummary | null> {
   try {
     const data = (await spotifyFetch(`/tracks/${trackId}`)) as SpotifyTrack;
     return toTrackSummary(data);
-  } catch {
+  } catch (err) {
+    console.error(`getTrack(${trackId}) failed:`, err);
     return null;
   }
 }
