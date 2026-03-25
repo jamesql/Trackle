@@ -53,11 +53,17 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.accessToken;
 }
 
-async function spotifyFetch(path: string): Promise<unknown> {
+async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
   const token = await getAccessToken();
   const response = await fetch(`https://api.spotify.com/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  if (response.status === 429 && retries > 0) {
+    const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
+    await new Promise((r) => setTimeout(r, retryAfter * 1000));
+    return spotifyFetch(path, retries - 1);
+  }
 
   if (!response.ok) {
     throw new Error(`Spotify API error: ${response.status} on ${path}`);
