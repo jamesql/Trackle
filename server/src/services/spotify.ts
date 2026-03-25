@@ -5,8 +5,8 @@
  *
  * All outgoing requests go through spotifyFetch which provides:
  *   - Response caching (TTL-based, avoids redundant API calls)
- *   - Concurrency limiting (prevents 429 rate limit errors)
- *   - Automatic retry with Retry-After on 429s
+ *   - Concurrency limiting (prevents burst overload)
+ *   - Retry with backoff on 429s
  */
 import { config } from '../config.js';
 import type { TrackSummary } from '../types.js';
@@ -118,7 +118,7 @@ function releaseSlot(): void {
 
 // ── Core fetch ───────────────────────────────────────────────────────
 
-async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
+async function spotifyFetch(path: string, retries = 2): Promise<unknown> {
   // Check cache first
   const ttl = getCacheTtl(path);
   if (ttl > 0) {
@@ -129,17 +129,27 @@ async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
   }
 
   await acquireSlot();
+  let slotReleased = false;
   try {
     const token = await getAccessToken();
     const response = await fetch(`https://api.spotify.com/v1${path}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (response.status === 429 && retries > 0) {
-      const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
+    if (response.status === 429) {
+      const raw = response.headers.get('Retry-After');
+      const parsed = parseInt(raw || '', 10);
+      const retryAfter = (parsed > 0 && parsed <= 30) ? parsed : 2;
+      console.warn(`Spotify 429 on ${path}, Retry-After: ${raw}, waiting ${retryAfter}s (${retries} retries left)`);
+
+      slotReleased = true;
       releaseSlot();
-      await new Promise((r) => setTimeout(r, retryAfter * 1000));
-      return spotifyFetch(path, retries - 1);
+
+      if (retries > 0) {
+        await new Promise((r) => setTimeout(r, retryAfter * 1000));
+        return spotifyFetch(path, retries - 1);
+      }
+      throw new Error(`Spotify rate limited on ${path} (retries exhausted)`);
     }
 
     if (!response.ok) {
@@ -155,7 +165,7 @@ async function spotifyFetch(path: string, retries = 3): Promise<unknown> {
 
     return data;
   } finally {
-    releaseSlot();
+    if (!slotReleased) releaseSlot();
   }
 }
 
@@ -210,28 +220,40 @@ export async function getTrack(trackId: string): Promise<TrackSummary | null> {
   }
 }
 
+/**
+ * Get full discography for artist mode.
+ * Uses batch endpoints to minimize API calls:
+ *   1. Top tracks + album list in parallel (2 calls)
+ *   2. "Get Several Albums" returns up to 20 albums WITH track listings per call (1-3 calls)
+ *   3. Batch-fetch full track details with popularity etc. (1-3 calls)
+ * Total: ~5-8 calls for a FULL discography vs 25+ with individual album fetches.
+ */
 export async function getArtistTracks(artistId: string): Promise<TrackSummary[]> {
-  const topData = (await spotifyFetch(`/artists/${artistId}/top-tracks`)) as {
-    tracks: SpotifyTrack[];
-  };
+  // Fetch top tracks and album list in parallel
+  const [topData, albumsData] = await Promise.all([
+    spotifyFetch(`/artists/${artistId}/top-tracks`) as Promise<{ tracks: SpotifyTrack[] }>,
+    spotifyFetch(`/artists/${artistId}/albums?include_groups=album,single&limit=50`) as Promise<{ items: { id: string }[] }>,
+  ]);
 
-  const albumsData = (await spotifyFetch(
-    `/artists/${artistId}/albums?include_groups=album,single&limit=20`
-  )) as { items: { id: string }[] };
+  // Batch-fetch albums (up to 20 per call) — each response includes track listings
+  const albumIds = albumsData.items.map((a) => a.id);
+  const albumTrackIds: string[] = [];
 
-  const albumTrackPromises = albumsData.items.map(async (album) => {
-    const albumData = (await spotifyFetch(`/albums/${album.id}/tracks?limit=50`)) as {
-      items: { id: string }[];
+  for (let i = 0; i < albumIds.length; i += 20) {
+    const batch = albumIds.slice(i, i + 20);
+    const batchData = (await spotifyFetch(`/albums?ids=${batch.join(',')}`)) as {
+      albums: { tracks: { items: { id: string }[] } }[];
     };
-    return albumData.items.map((t) => t.id);
-  });
-
-  const albumTrackIds = (await Promise.all(albumTrackPromises)).flat();
+    for (const album of batchData.albums) {
+      albumTrackIds.push(...album.tracks.items.map((t) => t.id));
+    }
+  }
 
   const allTrackIds = [
     ...new Set([...topData.tracks.map((t) => t.id), ...albumTrackIds]),
   ];
 
+  // Batch-fetch full track details (popularity, album art, etc.)
   const tracks: TrackSummary[] = [];
 
   for (let i = 0; i < allTrackIds.length; i += 50) {
