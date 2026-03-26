@@ -12,12 +12,13 @@ router.get('/daily', async (_req, res) => {
     const today = new Date().toISOString().slice(0, 10);
     const { trackId, track } = await getDailySong(today);
 
+    const answerHash = hashAnswer(trackId, today);
     const payload: GamePayload = {
       gameId: today,
-      previewUrl: `/api/audio/${today}`,
+      previewUrl: `/api/audio/${today}?v=${answerHash.slice(0, 8)}`,
       clipDurations: CLIP_DURATIONS,
       searchScope: 'global',
-      answerHash: hashAnswer(trackId, today),
+      answerHash,
     };
 
     res.json(payload);
